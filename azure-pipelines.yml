@@ -1,5 +1,5 @@
 ### YamlMime:Yaml
-ms.openlocfilehash: 3a04a8eecfac3a11b38de46dad2559ee18134ad6
+ms.openlocfilehash: fa812bd87a089371cf4de946a97496dc89b1e36a
 ms.sourcegitcommit: 82f364d63269c277208cf43051f26cc26a25f1a4
 ms.translationtype: HT
 ms.contentlocale: fr-FR
@@ -58,4 +58,26 @@ stages:
         arguments: --no-build --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/$(buildConfiguration)
         zipAfterPublish: true
     - publish: $(Build.ArtifactStagingDirectory)
-      artifact: drop  
+      artifact: drop
+- stage: Deploy
+  displayName: Deploy the web application
+  dependsOn: Build
+  jobs:
+  - deployment: Deploy
+    pool:
+      vmImage: ubuntu-18.04
+    environment: dev
+    variables:
+    - group: Release
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: drop
+          - task: AzureWebApp@1
+            displayName: 'Azure App Service Deploy: website'
+            inputs:
+              azureSubscription: Resource Manager - Tailspin - Space Game
+              appName: $(WebAppName)
+              package: $(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip
